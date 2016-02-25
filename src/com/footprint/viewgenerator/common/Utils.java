@@ -26,6 +26,8 @@ import com.intellij.ui.awt.RelativePoint;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Utils {
 
@@ -279,7 +281,7 @@ public class Utils {
     public static int getInjectCount(ArrayList<Element> elements) {
         int cnt = 0;
         for (Element element : elements) {
-            if (element.used) {
+            if (element.needDeal) {
                 cnt++;
             }
         }
@@ -338,5 +340,18 @@ public class Utils {
         PsiClass classInModule = JavaPsiFacade.getInstance(project).findClass(className,
                 new EverythingGlobalScope(project));
         return classInModule != null;
+    }
+
+    /**
+     * 去除空格换行等字符
+     */
+    public static String replaceBlank(String str) {
+        String dest = "";
+        if (str != null) {
+            Pattern p = Pattern.compile("\\s*|\t|\r|\n");
+            Matcher m = p.matcher(str);
+            dest = m.replaceAll("");
+        }
+        return dest;
     }
 }

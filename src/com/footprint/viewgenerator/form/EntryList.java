@@ -27,7 +27,6 @@ public class EntryList extends JPanel {
     protected ICancelListener mCancelListener;
     protected JCheckBox mPrefixCheck;
     protected JTextField mPrefixValue;
-    protected JLabel mPrefixLabel;
     protected JCheckBox mHolderCheck;
     protected JLabel mHolderLabel;
     protected JButton mConfirm;

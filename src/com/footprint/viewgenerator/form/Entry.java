@@ -32,7 +32,7 @@ public class Entry extends JPanel {
         mCheck = new JCheckBox();
         mCheck.setPreferredSize(new Dimension(40, 26));
         if (!mGeneratedIDs.contains(element.getFullID())) {
-            mCheck.setSelected(mElement.used);
+            mCheck.setSelected(mElement.needDeal);
         } else {
             mCheck.setSelected(false);
         }
@@ -79,7 +79,7 @@ public class Entry extends JPanel {
     }
 
     public Element syncElement() {
-        mElement.used = mCheck.isSelected();
+        mElement.needDeal = mCheck.isSelected();
         mElement.isClick = mEvent.isSelected();
         mElement.fieldName = mName.getText();
 

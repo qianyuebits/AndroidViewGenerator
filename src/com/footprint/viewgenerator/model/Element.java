@@ -17,9 +17,11 @@ public class Element {
     public String name; // element name
     public String fieldName; // name of variable
     public boolean isValid = false;
-    public boolean used = true;
+    public boolean needDeal = true;//是否需要自动处理
     public boolean isClick = true;
     public String typeName = "";
+    public boolean isDeclared = false;//是否已经声明过
+    public boolean isInit = false;//是否已经初始化
 
     public Element(String name, String id) {
         // id
