@@ -185,7 +185,18 @@ public class ViewGenerateAction extends BaseGenerateAction implements IConfirmLi
 //            }
 //        }
 
-        EntryList panel = new EntryList(project, editor, elements, ids, this, this);
+        // get parent classes and check if it's an adapter
+        boolean createHolder = false;
+        PsiReferenceList list = clazz.getExtendsList();
+        if (list != null) {
+            for (PsiJavaCodeReferenceElement element : list.getReferenceElements()) {
+                if (Definitions.adapters.contains(element.getQualifiedName())) {
+                    createHolder = true;
+                }
+            }
+        }
+
+        EntryList panel = new EntryList(project, editor, elements, ids, createHolder, this, this);
 
         mDialog = new JFrame();
         mDialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);

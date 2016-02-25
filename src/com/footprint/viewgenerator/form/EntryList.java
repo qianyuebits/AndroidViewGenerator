@@ -32,9 +32,10 @@ public class EntryList extends JPanel {
     protected JButton mConfirm;
     protected JButton mCancel;
 
-    public EntryList(Project project, Editor editor, ArrayList<Element> elements, ArrayList<String> ids, IConfirmListener confirmListener, ICancelListener cancelListener) {
+    public EntryList(Project project, Editor editor, ArrayList<Element> elements, ArrayList<String> ids, boolean createHolder, IConfirmListener confirmListener, ICancelListener cancelListener) {
         mProject = project;
         mEditor = editor;
+        mCreateHolder = createHolder;
         mConfirmListener = confirmListener;
         mCancelListener = cancelListener;
         if (elements != null) {

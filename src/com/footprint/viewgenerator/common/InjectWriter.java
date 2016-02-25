@@ -6,6 +6,7 @@ import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
 import com.intellij.psi.codeStyle.JavaCodeStyleManager;
+import com.intellij.psi.search.EverythingGlobalScope;
 import com.intellij.psi.search.GlobalSearchScope;
 
 import java.util.ArrayList;
@@ -30,6 +31,10 @@ public class InjectWriter extends WriteCommandAction.Simple {
 
     //是否已经添加OnClickListener监听
     protected boolean isClickClass = false;
+
+    PsiClass activityClass;
+    PsiClass fragmentClass;
+    PsiClass supportFragmentClass;
 
     public InjectWriter(PsiFile file, PsiClass clazz, String command, List<String> fieldNameList, ArrayList<Element> elements, HashMap<String, Element> elementsIdMap, String layoutFileName, String fieldNamePrefix, boolean createHolder) {
         super(clazz.getProject(), command);
@@ -70,16 +75,24 @@ public class InjectWriter extends WriteCommandAction.Simple {
             stringBuilder.delete(stringBuilder.length() - 1, stringBuilder.length());
             importStrList.add(stringBuilder.toString());
         }
+
+        activityClass = JavaPsiFacade.getInstance(mProject).findClass(
+                "android.app.Activity", new EverythingGlobalScope(mProject));
+        fragmentClass = JavaPsiFacade.getInstance(mProject).findClass(
+                "android.app.Fragment", new EverythingGlobalScope(mProject));
+        supportFragmentClass = JavaPsiFacade.getInstance(mProject).findClass(
+                "android.support.v4.app.Fragment", new EverythingGlobalScope(mProject));
     }
 
     @Override
     public void run() throws Throwable {
         if (mCreateHolder) {//目前永远为False
+            generateAdapter();
         } else {
             if (Utils.getInjectCount(mElements) > 0) {
                 generateFields();
             }
-            generateInitMethods();
+            generateInitMethods(mClass);
             if (Utils.getClickCount(mElements) > 0) {
                 generateClick();
             }
@@ -93,26 +106,28 @@ public class InjectWriter extends WriteCommandAction.Simple {
         new ReformatCodeProcessor(mProject, mClass.getContainingFile(), null, false).runWithoutProgress();
     }
 
-    protected void generateInitMethods() {
+    protected void generateInitMethods(PsiClass parentClass) {
         if (mClass.findMethodsByName("initView", false).length == 0) {//不存在该方法
             // 添加initView()方法
             StringBuilder method = new StringBuilder();
-            method.append("private void initView() {\n");
+            if (isActivity()) {
+                method.append("private void initView() {\n");
+            } else {
+                method.append("private void initView(View rootView) {\n");
+            }
             for (Element element : mElements) {
                 method.append(generateFindViewByIdText(element)).append("\n");
-                if (element.isClick) {//添加监听
+                if (element.isClick && !mCreateHolder) {//添加监听
                     method.append(element.fieldName + ".setOnClickListener(" + mClass.getName() + ".this);");
                 }
             }
             method.append("}");
-            mClass.add(mFactory.createMethodFromText(method.toString(), mClass));
+            parentClass.add(mFactory.createMethodFromText(method.toString(), mClass));
 
             addInitViewMethodInvoked();
-        } else {
-            System.out.println("initView() method has existed!");
-        }
+        } else {//已经有该方法
 
-        System.out.println("InitView has finished!");
+        }
     }
 
     protected void generateClick() {
@@ -131,50 +146,50 @@ public class InjectWriter extends WriteCommandAction.Simple {
                 method.append("}}");
                 mClass.add(mFactory.createMethodFromText(method.toString(), mClass));
             } else {//TODO 之前已经添加过——这个处理起来太尼玛麻烦了
-//                PsiMethod onClick = mClass.findMethodsByName("onClick", false)[0];
-//                PsiStatement firstStatement = null;
-//
-//                List<Element> elements = getElementsListCopy();
-//                for (PsiStatement statement : onClick.getBody().getStatements()) {
-//                    if (statement instanceof PsiBreakStatement && firstStatement == null) {
-//                        firstStatement = statement;
-//                    }
-//
-//                    if (statement.getText().contains("R.id.")) {//TODO 这里判断有误
-//                        String fullId = getIdFromCaseStatement(statement.getText());
-//                        elements.remove(elementsIdMap.get(fullId));
-//                    }
-//                }
-//
-//                for (Element element : elements) {//补足缺失的Id
-//                    if (element.isClick) {//TODO 这里创建也有问题
-//                        onClick.getBody().addAfter(mFactory.createStatementFromText(
-//                                "case " + element.getFullID() + ": break;", mClass), firstStatement);
-//                    }
-//                }
             }
         }
     }
 
-    private StringBuilder statementBuilder = new StringBuilder();
-
-    private String getIdFromCaseStatement(String text) {
-        statementBuilder.delete(0, statementBuilder.length());
-        StringBuilder stringBuilder = new StringBuilder(text);
-        stringBuilder.delete(0, stringBuilder.indexOf(" ") + 1)
-                .deleteCharAt(stringBuilder.length() - 1);
-        return stringBuilder.toString();
-    }
-
     /**
-     * 只是放到另外一个List中去
-     *
-     * @return
+     * Create ViewHolder for adapters with injections
      */
-    private List<Element> getElementsListCopy() {
-        List<Element> elementList = new ArrayList<Element>();
-        elementList.addAll(mElements);
-        return elementList;
+    protected void generateAdapter() {
+        if (mClass.findInnerClassByName(Utils.getViewHolderClassName(), true) != null) {
+            Utils.showInfoNotification(mProject, "ViewHolder已经存在");
+            return;
+        }
+
+        // view holder class
+        StringBuilder holderBuilder = new StringBuilder();
+        holderBuilder.append(Utils.getViewHolderClassName());
+        holderBuilder.append("(android.view.View rootView) {");
+        holderBuilder.append("initView(rootView);");
+        holderBuilder.append("}");
+
+        PsiClass viewHolder = mFactory.createClassFromText(holderBuilder.toString(), mClass);
+        viewHolder.setName(Utils.getViewHolderClassName());
+
+        // add injections into main class
+        StringBuilder injection = new StringBuilder();
+        for (Element element : mElements) {
+            if (!element.needDeal || fieldNameList.contains(element.fieldName)) {//没有勾选，或者同样名字的变量已经声明过了
+                continue;
+            }
+
+            injection.delete(0, injection.length());
+            injection.append("protected ");
+            injection.append(getFieldTypeName(element));
+            injection.append(" ");
+            injection.append(element.fieldName);
+            injection.append(";");
+
+            viewHolder.add(mFactory.createFieldFromText(injection.toString(), mClass));
+        }
+
+        generateInitMethods(viewHolder);
+        mClass.add(viewHolder);
+        //创建holder
+        mClass.addBefore(mFactory.createKeyword("static", mClass), mClass.findInnerClassByName(Utils.getViewHolderClassName(), true));
     }
 
     //添加接口实现
@@ -201,18 +216,25 @@ public class InjectWriter extends WriteCommandAction.Simple {
      */
     protected void generateFields() {
         // add injections into main class
+        StringBuilder injection = new StringBuilder();
         for (Element element : mElements) {
             if (!element.needDeal || fieldNameList.contains(element.fieldName)) {//没有勾选，或者同样名字的变量已经声明过了
                 continue;
             }
 
-            StringBuilder injection = new StringBuilder();
+            injection.delete(0, injection.length());
             injection.append("protected ");
             injection.append(getFieldTypeName(element));
             injection.append(" ");
             injection.append(element.fieldName);
             injection.append(";");
 
+            mClass.add(mFactory.createFieldFromText(injection.toString(), mClass));
+        }
+
+        if (!isActivity() && !fieldNameList.contains("rootView")) {
+            injection.delete(0, injection.length());
+            injection.append("protected View rootView;");
             mClass.add(mFactory.createFieldFromText(injection.toString(), mClass));
         }
     }
@@ -244,9 +266,15 @@ public class InjectWriter extends WriteCommandAction.Simple {
         stringBuilder.delete(0, stringBuilder.length());
         stringBuilder.append(element.fieldName)
                 .append("=(")
-                .append(element.typeName)
-                .append(")findViewById(")
-                .append(element.getFullID())
+                .append(getFieldTypeName(element));
+
+        if (isActivity()) {
+            stringBuilder.append(")findViewById(");
+        } else {
+            stringBuilder.append(")rootView.findViewById(");
+        }
+
+        stringBuilder.append(element.getFullID())
                 .append(");");
 
         return stringBuilder.toString();
@@ -254,18 +282,36 @@ public class InjectWriter extends WriteCommandAction.Simple {
 
     //添加InitView方法的调用
     private void addInitViewMethodInvoked() {
-        PsiMethod onCreate = mClass.findMethodsByName("onCreate", false)[0];
-        if (!containsInitViewMethodInvokedLine(onCreate, Definitions.InitViewMethodInvoked)) {
-            for (PsiStatement statement : onCreate.getBody().getStatements()) {
-                // Search for setContentView()
-                if (statement.getFirstChild() instanceof PsiMethodCallExpression) {
-                    PsiReferenceExpression methodExpression
-                            = ((PsiMethodCallExpression) statement.getFirstChild())
-                            .getMethodExpression();
-                    // Insert ButterKnife.inject()/ButterKnife.bind() after setContentView()
-                    if (methodExpression.getText().equals("setContentView")) {
-                        onCreate.getBody().addAfter(mFactory.createStatementFromText(
-                                Definitions.InitViewMethodInvoked, mClass), statement);
+        //Activity处理
+        if (isActivity()) {
+            PsiMethod onCreate = mClass.findMethodsByName("onCreate", false)[0];
+            if (!containsInitViewMethodInvokedLine(onCreate, Definitions.InitViewMethodInvoked)) {
+                for (PsiStatement statement : onCreate.getBody().getStatements()) {
+                    // Search for setContentView()
+                    if (statement.getFirstChild() instanceof PsiMethodCallExpression) {
+                        PsiReferenceExpression methodExpression
+                                = ((PsiMethodCallExpression) statement.getFirstChild())
+                                .getMethodExpression();
+                        // Insert ButterKnife.inject()/ButterKnife.bind() after setContentView()
+                        if (methodExpression.getText().equals("setContentView")) {
+                            onCreate.getBody().addAfter(mFactory.createStatementFromText(
+                                    Definitions.InitViewMethodInvoked, mClass), statement);
+                            break;
+                        }
+                    }
+                }
+            }
+        } else if (isFragment()) {
+            PsiMethod onCreateView = mClass.findMethodsByName("onCreateView", false)[0];
+            if (!containsInitViewMethodInvokedLine(onCreateView, Definitions.InitViewMethodInvoked)) {
+                for (PsiStatement statement : onCreateView.getBody().getStatements()) {
+                    if (statement instanceof PsiReturnStatement) {
+                        String returnValue = ((PsiReturnStatement) statement).getReturnValue().getText();
+                        if (returnValue.contains("R.layout")) {
+                            onCreateView.getBody().addBefore(mFactory.createStatementFromText("rootView = " + returnValue + ";", mClass), statement);
+                            onCreateView.getBody().addBefore(mFactory.createStatementFromText("initView(rootView);", mClass), statement);
+                            statement.replace(mFactory.createStatementFromText("return rootView;", mClass));
+                        }
                         break;
                     }
                 }
@@ -286,5 +332,13 @@ public class InjectWriter extends WriteCommandAction.Simple {
             }
         }
         return false;
+    }
+
+    private boolean isActivity() {
+        return activityClass != null && mClass.isInheritor(activityClass, true);
+    }
+
+    private boolean isFragment() {
+        return (fragmentClass != null && mClass.isInheritor(fragmentClass, true)) || (supportFragmentClass != null && mClass.isInheritor(supportFragmentClass, true));
     }
 }
