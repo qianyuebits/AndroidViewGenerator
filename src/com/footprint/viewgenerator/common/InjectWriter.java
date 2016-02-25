@@ -137,10 +137,16 @@ public class InjectWriter extends WriteCommandAction.Simple {
 
             if (!isClickClass) {
                 method.append("@Override \n");
-                method.append("public void onClick(android.view.View view) {switch (view.getId()){\n");
+                method.append("public void onClick(android.view.View view) {\n");
+                boolean isFirst = true;
                 for (Element element : mElements) {
                     if (element.isClick) {
-                        method.append("case " + element.getFullID() + ": \nbreak;");
+                        if (isFirst) {
+                            method.append("if(view.getId() == " + element.getFullID() + "){\n\n");
+                            isFirst = false;
+                        } else {
+                            method.append("}else if(view.getId() == " + element.getFullID() + "){\n\n");
+                        }
                     }
                 }
                 method.append("}}");
@@ -198,7 +204,7 @@ public class InjectWriter extends WriteCommandAction.Simple {
         PsiMethod getView = mClass.findMethodsByName("getView", false)[0];
         String layoutStatement = null;
         for (PsiStatement statement : getView.getBody().getStatements()) {
-            if (statement instanceof PsiExpressionStatement && statement.getText().contains("R.layout.")) {//声明语句
+            if (Utils.isLayoutStatement(statement)) {
                 layoutStatement = statement.getText();
                 statement.replace(mFactory.createStatementFromText("View view = convertView;", mClass));
             }
@@ -212,14 +218,8 @@ public class InjectWriter extends WriteCommandAction.Simple {
     }
 
     private String getViewHolderCreateStr(String layoutStatement) {
-        StringBuilder stringBuilder = new StringBuilder(layoutStatement);
-        stringBuilder.delete(0, stringBuilder.indexOf("R.layout."));
-        if (stringBuilder.indexOf(";") > 0) {
-            stringBuilder.delete(stringBuilder.indexOf(";"), stringBuilder.length());
-        }
-
         return "if(view == null || !(view.getTag() instanceof ViewHolder)){view = LayoutInflater.from(parent.getContext()).inflate(" +
-                Utils.replaceBlank(stringBuilder.toString()) +
+                Utils.getIdFromLayoutStatement(layoutStatement) +
                 ", null);viewHolder = new ViewHolder(view);view.setTag(viewHolder);}else{viewHolder = (ViewHolder)view.getTag();}";
     }
 
@@ -319,32 +319,49 @@ public class InjectWriter extends WriteCommandAction.Simple {
             PsiMethod onCreate = mClass.findMethodsByName("onCreate", false)[0];
             if (!containsInitViewMethodInvokedLine(onCreate, Definitions.InitViewMethodInvoked)) {
                 for (PsiStatement statement : onCreate.getBody().getStatements()) {
-                    // Search for setContentView()
-                    if (statement.getFirstChild() instanceof PsiMethodCallExpression) {
-                        PsiReferenceExpression methodExpression
-                                = ((PsiMethodCallExpression) statement.getFirstChild())
-                                .getMethodExpression();
-                        // Insert ButterKnife.inject()/ButterKnife.bind() after setContentView()
-                        if (methodExpression.getText().equals("setContentView")) {
-                            onCreate.getBody().addAfter(mFactory.createStatementFromText(
-                                    Definitions.InitViewMethodInvoked, mClass), statement);
-                            break;
-                        }
+                    if (Utils.isLayoutStatement(statement)) {//
+                        statement.replace(mFactory.createStatementFromText("super.setContentView(" + Utils.getIdFromLayoutStatement(statement.getText()) + ");", mClass));
+                        onCreate.getBody().addBefore(mFactory.createStatementFromText(
+                                Definitions.InitViewMethodInvoked, mClass), onCreate.getBody().getLastBodyElement());
                     }
                 }
             }
         } else if (isFragment()) {
             PsiMethod onCreateView = mClass.findMethodsByName("onCreateView", false)[0];
             if (!containsInitViewMethodInvokedLine(onCreateView, Definitions.InitViewMethodInvoked)) {
+                boolean isReturnMode = false;
                 for (PsiStatement statement : onCreateView.getBody().getStatements()) {
+                    //解析 return R.layout.activity.main
                     if (statement instanceof PsiReturnStatement) {
                         String returnValue = ((PsiReturnStatement) statement).getReturnValue().getText();
                         if (returnValue.contains("R.layout")) {
-                            onCreateView.getBody().addBefore(mFactory.createStatementFromText("rootView = " + returnValue + ";", mClass), statement);
+                            onCreateView.getBody().addBefore(mFactory.createStatementFromText("rootView = inflater.inflate(" + Utils.getIdFromLayoutStatement(returnValue) + ", null);", mClass), statement);
+                            onCreateView.getBody().addBefore(mFactory.createStatementFromText("initView(rootView);", mClass), statement);
+                            statement.replace(mFactory.createStatementFromText("return rootView;", mClass));
+                            isReturnMode = true;
+                        }
+                        break;
+                    }
+                }
+
+                if (!isReturnMode) {
+                    for (PsiStatement statement : onCreateView.getBody().getStatements()) {
+                        /*
+                         * 解析
+                         *
+                         * R.layout.activity.main
+                         * return null
+                         * */
+                        if (Utils.isLayoutStatement(statement)) {
+                            statement.replace(mFactory.createStatementFromText("rootView = inflater.inflate("
+                                    + Utils.getIdFromLayoutStatement(statement.getText()) + ", null);", mClass));
+                        }
+
+                        if (statement instanceof PsiReturnStatement) {
+                            //设置语句
                             onCreateView.getBody().addBefore(mFactory.createStatementFromText("initView(rootView);", mClass), statement);
                             statement.replace(mFactory.createStatementFromText("return rootView;", mClass));
                         }
-                        break;
                     }
                 }
             }

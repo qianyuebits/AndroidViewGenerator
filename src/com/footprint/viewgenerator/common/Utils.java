@@ -354,4 +354,18 @@ public class Utils {
         }
         return dest;
     }
+
+    public static boolean isLayoutStatement(PsiStatement statement) {
+        return statement instanceof PsiExpressionStatement && statement.getText().contains("R.layout.");
+    }
+
+    public static String getIdFromLayoutStatement(String layoutStatement) {
+        StringBuilder stringBuilder = new StringBuilder(layoutStatement);
+        stringBuilder.delete(0, stringBuilder.indexOf("R.layout."));
+        if (stringBuilder.indexOf(";") > 0) {
+            stringBuilder.delete(stringBuilder.indexOf(";"), stringBuilder.length());
+        }
+
+        return replaceBlank(stringBuilder.toString());
+    }
 }
