@@ -7,7 +7,7 @@
 自动从layout生成native代码，包括声明变量，使用findViewById实例化变量，为View添加监听，自动生成ViewHolder模板代码。
 
 ###演示
-![AndroidViewGenerator演示](resources/demo.gif)
+![AndroidViewGenerator演示](http://7xktd8.com1.z0.glb.clouddn.com/demo.gif)
 
 #TODO
 1. 变量、实例化增量式修改； —— Done
