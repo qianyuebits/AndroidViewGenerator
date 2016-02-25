@@ -52,12 +52,39 @@ public class ViewGenerateAction extends BaseGenerateAction implements IConfirmLi
         actionPerformedImpl(project, editor);
     }
 
+    private String getViewHolderCreateStr(String layoutStatement) {
+        StringBuilder stringBuilder = new StringBuilder(layoutStatement);
+        stringBuilder.delete(0, stringBuilder.indexOf("R.id."));
+        if (stringBuilder.indexOf(";") > 0) {
+            stringBuilder.delete(stringBuilder.indexOf(";"), stringBuilder.length());
+        }
+
+        return "if(view == null || !(view.getTag() instanceof ViewHolder)){view = LayoutInflater.from(parent.getContext()).inflate(" +
+                Utils.replaceBlank(stringBuilder.toString()) +
+                ", null);viewHolder = new ViewHolder(view);view.setTag(viewHolder);}else{viewHolder = (ViewHolder)view.getTag();}";
+    }
+
     @Override
     public void actionPerformedImpl(Project project, Editor editor) {
         super.actionPerformedImpl(project, editor);
         PsiFile file = PsiUtilBase.getPsiFileInEditor(editor, project);
 //        //##############################调试代码##############################
 //        PsiClass mClass = getTargetClass(editor, file);
+//        PsiElementFactory mFactory = JavaPsiFacade.getElementFactory(project);
+//        PsiMethod getView = mClass.findMethodsByName("getView", false)[0];
+//        String layoutStatement = null;
+//        for (PsiStatement statement : getView.getBody().getStatements()) {
+//            if (statement instanceof PsiExpressionStatement && statement.getText().contains("R.layout.")) {//声明语句
+//                layoutStatement = statement.getText();
+//                statement.replace(mFactory.createStatementFromText("View view = convertView;", mClass));
+//            }
+//            if (statement instanceof PsiReturnStatement) {
+//                getView.getBody().addBefore(mFactory.createStatementFromText("ViewHolder viewHolder = null;", mClass), statement);
+//                getView.getBody().addBefore(mFactory.createStatementFromText(getViewHolderCreateStr(layoutStatement), mClass), statement);
+//                statement.replace(mFactory.createStatementFromText("return view;", mClass));
+//            }
+//        }
+
 //        PsiMethod[] initViews = mClass.findMethodsByName("initView", false);
 //        if (initViews.length > 0) {
 //            PsiMethod method = initViews[0];

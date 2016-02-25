@@ -188,8 +188,39 @@ public class InjectWriter extends WriteCommandAction.Simple {
 
         generateInitMethods(viewHolder);
         mClass.add(viewHolder);
-        //创建holder
+        //添加static
         mClass.addBefore(mFactory.createKeyword("static", mClass), mClass.findInnerClassByName(Utils.getViewHolderClassName(), true));
+
+        processAdapterGetViewMethod();
+    }
+
+    private void processAdapterGetViewMethod() {
+        PsiMethod getView = mClass.findMethodsByName("getView", false)[0];
+        String layoutStatement = null;
+        for (PsiStatement statement : getView.getBody().getStatements()) {
+            if (statement instanceof PsiExpressionStatement && statement.getText().contains("R.layout.")) {//声明语句
+                layoutStatement = statement.getText();
+                statement.replace(mFactory.createStatementFromText("View view = convertView;", mClass));
+            }
+            if (statement instanceof PsiReturnStatement) {
+                //设置语句
+                getView.getBody().addBefore(mFactory.createStatementFromText("ViewHolder viewHolder = null;", mClass), statement);
+                getView.getBody().addBefore(mFactory.createStatementFromText(getViewHolderCreateStr(layoutStatement), mClass), statement);
+                statement.replace(mFactory.createStatementFromText("return view;", mClass));
+            }
+        }
+    }
+
+    private String getViewHolderCreateStr(String layoutStatement) {
+        StringBuilder stringBuilder = new StringBuilder(layoutStatement);
+        stringBuilder.delete(0, stringBuilder.indexOf("R.layout."));
+        if (stringBuilder.indexOf(";") > 0) {
+            stringBuilder.delete(stringBuilder.indexOf(";"), stringBuilder.length());
+        }
+
+        return "if(view == null || !(view.getTag() instanceof ViewHolder)){view = LayoutInflater.from(parent.getContext()).inflate(" +
+                Utils.replaceBlank(stringBuilder.toString()) +
+                ", null);viewHolder = new ViewHolder(view);view.setTag(viewHolder);}else{viewHolder = (ViewHolder)view.getTag();}";
     }
 
     //添加接口实现
@@ -217,6 +248,13 @@ public class InjectWriter extends WriteCommandAction.Simple {
     protected void generateFields() {
         // add injections into main class
         StringBuilder injection = new StringBuilder();
+
+        if (!isActivity() && !fieldNameList.contains("rootView")) {
+            injection.delete(0, injection.length());
+            injection.append("protected View rootView;");
+            mClass.add(mFactory.createFieldFromText(injection.toString(), mClass));
+        }
+
         for (Element element : mElements) {
             if (!element.needDeal || fieldNameList.contains(element.fieldName)) {//没有勾选，或者同样名字的变量已经声明过了
                 continue;
@@ -229,12 +267,6 @@ public class InjectWriter extends WriteCommandAction.Simple {
             injection.append(element.fieldName);
             injection.append(";");
 
-            mClass.add(mFactory.createFieldFromText(injection.toString(), mClass));
-        }
-
-        if (!isActivity() && !fieldNameList.contains("rootView")) {
-            injection.delete(0, injection.length());
-            injection.append("protected View rootView;");
             mClass.add(mFactory.createFieldFromText(injection.toString(), mClass));
         }
     }
