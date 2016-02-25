@@ -14,6 +14,7 @@
 1. 变量、实例化增量式修改； —— Done
 2. 监听增量式修改；—— TODO
 3. 支持ViewHolder的生成；—— Done
+4. 发布 - TODO
 
 #感谢
 本项目基于[android-butterknife-zelezny](https://github.com/avast/android-butterknife-zelezny)改造。因此特别感谢：@Avast。
