@@ -116,6 +116,10 @@ public class InjectWriter extends WriteCommandAction.Simple {
                 method.append("private void initView(View rootView) {\n");
             }
             for (Element element : mElements) {
+                if (!element.needDeal) {
+                    continue;
+                }
+
                 method.append(generateFindViewByIdText(element)).append("\n");
                 if (element.isClick && !mCreateHolder) {//添加监听
                     method.append(element.fieldName + ".setOnClickListener(" + mClass.getName() + ".this);");

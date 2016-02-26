@@ -80,7 +80,7 @@ public class Entry extends JPanel {
 
     public Element syncElement() {
         mElement.needDeal = mCheck.isSelected();
-        mElement.isClick = mEvent.isSelected();
+        mElement.isClick = mEvent.isSelected() && mElement.needDeal;//需要处理
         mElement.fieldName = mName.getText();
 
         if (mElement.checkValidity()) {
