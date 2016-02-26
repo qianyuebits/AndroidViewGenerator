@@ -1,17 +1,19 @@
 <idea-plugin version="2">
     <id>com.footprint.asplugin.plugin.viewgenerator</id>
-    <name>ViewGenerator</name>
-    <version>1.0</version>
+    <name>Android View Generator</name>
+    <version>1.1</version>
     <vendor email="footprint-lqm@qq.com" url="https://github.com/BigFootprint">BigFootprint</vendor>
 
     <description><![CDATA[
-      Enter short description for your plugin here.<br>
-      <em>most HTML tags may be used</em>
+      Plugin for: <br>
+      1）Generating fields from selected layout XMLs in activities/fragments/adapters; <br>
+      2）Initializing the fields by findViewById method; <br>
+      3）Generating viewholder-template for adapter; <br>
     ]]></description>
 
     <change-notes><![CDATA[
-      Add change notes here.<br>
-      <em>most HTML tags may be used</em>
+      【1.1】—— 2016/02/25 <br>
+      Initial Release
     ]]>
     </change-notes>
 

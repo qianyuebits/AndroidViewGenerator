@@ -7,14 +7,18 @@
 自动从layout生成native代码，包括声明变量，使用findViewById实例化变量，为View添加监听，自动生成ViewHolder模板代码。
 
 ###演示
-![AndroidViewGenerator演示](resources/demo.gif)
-加载不出来的可以看这个 [__链接__](http://7xktd8.com1.z0.glb.clouddn.com/demo.gif)。
+![AndroidViewGenerator演示](resources/demoB.gif)
+加载不出来的可以看这个 [__链接__](http://7xktd8.com1.z0.glb.clouddn.com/demoB.gif)。
+
+###安装
+1. 从[这里](https://plugins.jetbrains.com/plugin/8219?pr=)下载，选择Android Studio -> Preferences -> Plugins ->  Install plugin from disk... -> 选择下载的jar包 -> 点击OK，重启即可；
+2. 选择Android Studio -> Preferences -> Plugins -> Browse repositories... -> 搜索 "Android View Generator"，安装即可。
+
 
 #TODO
 1. 变量、实例化增量式修改； —— Done
-2. 监听增量式修改；—— TODO
+2. 监听、View增加增量式修改；—— TODO
 3. 支持ViewHolder的生成；—— Done
-4. 发布 - TODO
 
 #感谢
 本项目基于[android-butterknife-zelezny](https://github.com/avast/android-butterknife-zelezny)改造。因此特别感谢：@Avast。
