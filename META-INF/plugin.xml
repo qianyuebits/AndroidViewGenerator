@@ -1,7 +1,7 @@
 <idea-plugin version="2">
     <id>com.footprint.asplugin.plugin.viewgenerator</id>
     <name>Android View Generator</name>
-    <version>1.1.1</version>
+    <version>1.2</version>
     <vendor email="footprint-lqm@qq.com" url="https://github.com/BigFootprint">BigFootprint</vendor>
 
     <description><![CDATA[
@@ -14,9 +14,12 @@
     <change-notes><![CDATA[
       【1.1】—— 2016/02/25 <br>
       Initial Release <br>
-
+       <br><br>
       【1.1.1】—— 2016/02/26 <br>
       修复 <a href="https://github.com/BigFootprint/AndroidViewGenerator/issues/1">Bug</a>
+      <br><br>
+      【1.2】—— 2016/02/27 <br>
+      全面支持增量式更新View
     ]]>
     </change-notes>
 
