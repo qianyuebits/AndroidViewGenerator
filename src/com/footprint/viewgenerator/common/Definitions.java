@@ -8,8 +8,10 @@ public class Definitions {
     public static final HashMap<String, String> paths = new HashMap<String, String>();
     public static final ArrayList<String> adapters = new ArrayList<String>();
     public static final String ViewClickListener = "android.view.View.OnClickListener";
-    public static final String InitViewMethodInvoked = "initView();";
+    public static final String Activity_InitViewMethodInvoked = "initView();";
+    public static final String Other_InitViewMethodInvoked = "initView(rootView);";
     public static final String FindViewById = "findViewById(";
+    public static final String SetOnClickListener = ".setOnClickListener(";
     public static final String IMPORT = "import ";
 
     static {

@@ -18,8 +18,8 @@ public class Element {
     public String fieldName; // name of variable
     public boolean isValid = false;
     public boolean needDeal = true;//是否需要自动处理
-    public boolean isClick = true;
-    public String typeName = "";
+    public boolean isClick = true;//是否需要添加监听
+    public String typeName = "";//类型名称（不带包名）
     public boolean isDeclared = false;//是否已经声明过
     public boolean isInit = false;//是否已经初始化
 

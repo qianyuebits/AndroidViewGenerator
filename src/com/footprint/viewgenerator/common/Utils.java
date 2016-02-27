@@ -2,6 +2,7 @@ package com.footprint.viewgenerator.common;
 
 import com.footprint.viewgenerator.Settings.Settings;
 import com.footprint.viewgenerator.model.Element;
+import com.footprint.viewgenerator.model.VGContext;
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.module.Module;
@@ -26,6 +27,7 @@ import com.intellij.ui.awt.RelativePoint;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -278,20 +280,32 @@ public class Utils {
         return PropertiesComponent.getInstance().getValue(Settings.VIEWHOLDER_CLASS_NAME, "ViewHolder");
     }
 
-    public static int getInjectCount(ArrayList<Element> elements) {
+    /**
+     * 删除不需要处理的Element
+     */
+    public static void dealElementList(ArrayList<Element> elements) {
+        Iterator<Element> iterator = elements.iterator();
+        while (iterator.hasNext()) {
+            Element element = iterator.next();
+            if (!element.needDeal)
+                iterator.remove();
+        }
+    }
+
+    public static int getInjectCount(VGContext context, ArrayList<Element> elements) {
         int cnt = 0;
         for (Element element : elements) {
-            if (element.needDeal) {
+            if (!context.getFieldNameList().contains(element.fieldName)) {
                 cnt++;
             }
         }
         return cnt;
     }
 
-    public static int getClickCount(ArrayList<Element> elements) {
+    public static int getClickCount(VGContext context, ArrayList<Element> elements) {
         int cnt = 0;
         for (Element element : elements) {
-            if (element.isClick) {
+            if (!context.getClickIdsList().contains(element.getFullID())) {
                 cnt++;
             }
         }
@@ -362,10 +376,26 @@ public class Utils {
     public static String getIdFromLayoutStatement(String layoutStatement) {
         StringBuilder stringBuilder = new StringBuilder(layoutStatement);
         stringBuilder.delete(0, stringBuilder.indexOf("R.layout."));
+
+        if (stringBuilder.indexOf(")") > 0) {
+            stringBuilder.delete(stringBuilder.indexOf(")"), stringBuilder.length());
+        }
+
         if (stringBuilder.indexOf(";") > 0) {
             stringBuilder.delete(stringBuilder.indexOf(";"), stringBuilder.length());
         }
 
         return replaceBlank(stringBuilder.toString());
+    }
+
+    public static void clearStringBuilder(StringBuilder builder) {
+        if (builder == null)
+            return;
+
+        builder.delete(0, builder.length());
+    }
+
+    public static boolean ifClassContainsMethod(PsiClass psiClass, String methodName) {
+        return psiClass.findMethodsByName(methodName, false).length != 0;
     }
 }
