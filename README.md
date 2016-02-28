@@ -4,7 +4,10 @@
 本项目针对日常开发中遇到的UI相关的繁琐操作进行自动化实现，降低开发者在这方面所需要的精力。
 
 ###主要功能
-自动从layout生成native代码，包括声明变量，使用findViewById实例化变量，为View添加监听，自动生成ViewHolder模板代码。
+1. 支持为Activity、Fragment以及任意类(比如自定义View)从Layout文件生成View实例并初始化；
+2. 支持为Adapter生成ViewHolder模板；
+3. 支持为View添加监听；
+4. 支持增量式修改(考虑到实例化的View会被使用，因此不支持View删除)；
 
 ###演示
 ![AndroidViewGenerator演示](resources/demoB.gif)
@@ -17,8 +20,8 @@
 
 #TODO
 1. 变量、实例化增量式修改； —— Done
-2. 监听、View增加增量式修改；—— TODO
+2. 监听、View增加增量式修改；—— Done
 3. 支持ViewHolder的生成；—— Done
 
 #感谢
-本项目基于[android-butterknife-zelezny](https://github.com/avast/android-butterknife-zelezny)改造。因此特别感谢：@Avast。
+本项目基于 [__android-butterknife-zelezny__](https://github.com/avast/android-butterknife-zelezny) 改造。因此特别感谢：@Avast。
