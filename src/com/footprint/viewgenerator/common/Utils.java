@@ -305,7 +305,8 @@ public class Utils {
     public static int getClickCount(VGContext context, ArrayList<Element> elements) {
         int cnt = 0;
         for (Element element : elements) {
-            if (!context.getClickIdsList().contains(element.getFullID())) {
+            if (!context.getClickIdsList().contains(element.getFullID())
+                    && element.isClick) {
                 cnt++;
             }
         }
